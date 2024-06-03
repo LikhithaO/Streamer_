@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Movies - Streamer</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('background.avif');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        #logo {
+            font-size: 2em;
+            font-family: 'Cursive', sans-serif;
+            color: #9d0000;
+        }
+        nav a {
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        nav a:hover {
+            background-color: #740000;
+        }
+        #search-section {
+            margin-top: 20px;
+        }
+        #search-input {
+            width: calc(100% - 100px);
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+        }
+        #search-btn {
+            padding: 10px 20px;
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #search-btn:hover {
+            background-color: #740000;
+        }
+        #search-results {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .movie-card {
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            width: 200px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .movie-card:hover {
+            transform: scale(1.05);
+        }
+        .movie-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .movie-card h3 {
+            margin: 10px;
+            font-size: 1.2em;
+        }
+        .movie-card p {
+            margin: 0 10px 10px;
+            font-size: 0.9em;
+            color: #bbb;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #1c1c1c;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+        .close {
+            color: #ccc;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #modal-title {
+            color: #9d0000;
+        }
+        #modal-poster {
+            float: left;
+            margin-right: 20px;
+            width: 300px;
+            height: auto;
+        }
+        #add-to-list-btn, #create-list-btn {
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #add-to-list-btn:hover, #create-list-btn:hover {
+            background-color: #740000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="logo">Streamer</h1>
+            <nav>
+                
+                <a href="lists.html">My Movie Lists</a>
+                <a href="index.html">logout</a>
+            </nav>
+        </header>
+        <main id="main-content">
+            <section id="search-section">
+                <h2>Search Movies</h2>
+                <input type="text" id="search-input" placeholder="Search for movies...">
+                <button id="search-btn">Search</button>
+                <div id="search-results"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="movie-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="modal-poster" src="" alt="Movie Poster">
+            <div>
+                <h2 id="modal-title"></h2>
+                <p id="modal-year"></p>
+                <p id="modal-plot"></p>
+                <h3>Add to List</h3>
+                <select id="existing-lists">
+                    <option value="">Select a list</option>
+                    <!-- Options will be added dynamically -->
+                </select>
+                <button id="add-to-list-btn">Add to List</button>
+                <h3>Create New List</h3>
+                <input type="text" id="new-list-name" placeholder="New list name">
+                <button id="create-list-btn">Create List</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('search-btn').addEventListener('click', () => {
+                const query = document.getElementById('search-input').value;
+                searchMovies(query);
+            });
+
+            function searchMovies(query) {
+                fetch(`http://www.omdbapi.com/?apikey=e1dc8f02&s=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displaySearchResults(data.Search);
+                    });
+            }
+
+            function displaySearchResults(movies) {
+                const searchResults = document.getElementById('search-results');
+                searchResults.innerHTML = '';
+
+                if (!movies) {
+                    searchResults.innerHTML = '<p>No results found</p>';
+                    return;
+                }
+
+                movies.forEach(movie => {
+                    const movieCard = document.createElement('div');
+                    movieCard.classList.add('movie-card');
+                    movieCard.dataset.movieId = movie.imdbID;
+
+                    const moviePoster = document.createElement('img');
+                    moviePoster.src = movie.Poster !== 'N/A' ? movie.Poster : 'default-poster.jpg';
+                    movieCard.appendChild(moviePoster);
+
+                    const movieTitle = document.createElement('h3');
+                    movieTitle.textContent = movie.Title;
+                    movieCard.appendChild(movieTitle);
+
+                    const movieYear = document.createElement('p');
+                    movieYear.textContent = `Year: ${movie.Year}`;
+                    movieCard.appendChild(movieYear);
+
+                    movieCard.addEventListener('click', () => {
+                        showMovieDetails(movie.imdbID);
+                    });
+
+                    searchResults.appendChild(movieCard);
+                });
+            }
+
+            function showMovieDetails(movieId) {
+                fetch(`http://www.omdbapi.com/?apikey=e1dc8f02&i=${movieId}`)
+                    .then(response => response.json())
+                    .then(movie => {
+                        const modal = document.getElementById('movie-modal');
+                        document.getElementById('modal-title').textContent = movie.Title;
+                        document.getElementById('modal-poster').src = movie.Poster !== 'N/A' ? movie.Poster : 'default-poster.jpg';
+                        document.getElementById('modal-year').textContent = `Year: ${movie.Year}`;
+                        document.getElementById('modal-plot').textContent = movie.Plot;
+                        modal.style.display = 'block';
+                    });
+            }
+
+            document.querySelector('.close').addEventListener('click', () => {
+                document.getElementById('movie-modal').style.display = 'none';
+            });
+
+            window.onclick = function(event) {
+                const modal = document.getElementById('movie-modal');
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            document.getElementById('add-to-list-btn').addEventListener('click', () => {
+                const listId = document.getElementById('existing-lists').value;
+                const movieId = document.querySelector('.movie-card[data-movie-id]').dataset.movieId;
+                if (listId) {
+                    // Add the movie to the selected list
+                    addMovieToList(listId, movieId);
+                }
+            });
+
+            document.getElementById('create-list-btn').addEventListener('click', () => {
+                const listName = document.getElementById('new-list-name').value;
+                const movieId = document.querySelector('.movie-card[data-movie-id]').dataset.movieId;
+                if (listName) {
+                    // Create a new list and add the movie to it
+                    createListAndAddMovie(listName, movieId);
+                }
+            });
+
+            function addMovieToList(listId, movieId) {
+                // Add the movie to the list (mock implementation)
+                console.log(`Adding movie ${movieId} to list ${listId}`);
+            }
+
+            function createListAndAddMovie(listName, movieId) {
+                // Create a new list and add the movie (mock implementation)
+                console.log(`Creating list ${listName} and adding movie ${movieId}`);
+            }
+        });
+    </script>
+</body>
+</html>

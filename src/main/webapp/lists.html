@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Movie Lists - Streamer</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('background.avif');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        #logo {
+            font-size: 2em;
+            font-family: 'Cursive', sans-serif;
+            color: #9d0000;
+        }
+        nav a {
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        nav a:hover {
+            background-color: #740000;
+        }
+        #lists-section {
+            margin-top: 20px;
+        }
+        #new-list-name {
+            width: calc(100% - 100px);
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+        }
+        #create-list-btn {
+            padding: 10px 20px;
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #create-list-btn:hover {
+            background-color: #740000;
+        }
+        .movie-list {
+            background-color: #333;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .movie-list h3 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #03dac6;
+        }
+        .movie-list p {
+            margin: 10px 0;
+            color: #bbb;
+        }
+        .movie-list button {
+            margin-left: 10px;
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .movie-list button:hover {
+            background-color: #740000;
+        }
+        .movie-list .list-options {
+            display: flex;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #1c1c1c;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+        .close {
+            color: #ccc;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #save-status-btn {
+            background-color: #9d0000;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #save-status-btn:hover {
+            background-color: #740000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="logo">Streamer</h1>
+            <nav>
+                <a href="search.html">Search Movies</a>
+                <a href="index.html">logout</a>
+            </nav>
+        </header>
+        <main id="main-content">
+            <section id="lists-section">
+                <h2>My Movie Lists</h2>
+                <div id="lists"></div>
+                <h3>Create New List</h3>
+                <input type="text" id="new-list-name" placeholder="New list name">
+                <button id="create-list-btn">Create List</button>
+            </section>
+        </main>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit List Status</h2>
+            <p id="list-status"></p>
+            <label for="list-public">Public</label>
+            <input type="radio" id="list-public" name="list-status" value="public">
+            <label for="list-private">Private</label>
+            <input type="radio" id="list-private" name="list-status" value="private" checked>
+            <button id="save-status-btn">Save</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const listsContainer = document.getElementById('lists');
+            const newListNameInput = document.getElementById('new-list-name');
+            const createListBtn = document.getElementById('create-list-btn');
+            const editModal = document.getElementById('edit-modal');
+            const closeModal = document.querySelector('.close');
+            const saveStatusBtn = document.getElementById('save-status-btn');
+            let currentListElement = null;
+
+            // Create a default Watchlist
+            createList('Watchlist');
+
+            createListBtn.addEventListener('click', () => {
+                const listName = newListNameInput.value;
+                if (listName) {
+                    createList(listName);
+                }
+            });
+
+            closeModal.addEventListener('click', () => {
+                editModal.style.display = 'none';
+            });
+
+            window.onclick = function(event) {
+                if (event.target === editModal) {
+                    editModal.style.display = 'none';
+                }
+            };
+
+            function createList(listName) {
+                console.log(`Creating list ${listName}`);
+                const listId = `list-${Date.now()}`;
+                const listElement = document.createElement('div');
+                listElement.classList.add('movie-list');
+                listElement.dataset.listId = listId;
+                listElement.dataset.public = 'false';
+
+                const listTitle = document.createElement('h3');
+                listTitle.textContent = listName;
+                listElement.appendChild(listTitle);
+
+                const listOptions = document.createElement('div');
+                listOptions.classList.add('list-options');
+                listOptions.innerHTML = `
+                    <button onclick="editList('${listId}')">Edit</button>
+                    <button onclick="deleteList('${listId}')">Delete</button>
+                `;
+                listElement.appendChild(listOptions);
+
+                listsContainer.appendChild(listElement);
+                newListNameInput.value = '';
+            }
+
+            window.editList = function(listId) {
+                console.log(`Editing list ${listId}`);
+                currentListElement = document.querySelector(`.movie-list[data-list-id='${listId}']`);
+                const isPublic = currentListElement.dataset.public === 'true';
+                document.getElementById('list-status').textContent = `Current Status: ${isPublic ? 'Public' : 'Private'}`;
+                document.getElementById(isPublic ? 'list-public' : 'list-private').checked = true;
+                editModal.style.display = 'block';
+            }
+
+            saveStatusBtn.addEventListener('click', () => {
+                const newStatus = document.querySelector('input[name="list-status"]:checked').value;
+                const newPublicState = newStatus === 'public';
+                currentListElement.dataset.public = newPublicState.toString();
+                editModal.style.display = 'none';
+            });
+
+            window.deleteList = function(listId) {
+                console.log(`Deleting list ${listId}`);
+                const listElement = document.querySelector(`.movie-list[data-list-id='${listId}']`);
+                if (listElement) {
+                    listsContainer.removeChild(listElement);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
